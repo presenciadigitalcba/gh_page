@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <style>
+    .theme--dark.v-btn.v-btn--disabled:not(.v-btn--flat):not(.v-btn--text):not(.v-btn-outlined) {
+  color: lightgray !important;
+  background-color: gray !important;
+}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <v-app>
+      <v-main>
+        <v-card  >
+          <v-app-bar
+            light
+            dense
+            :collapse="!collapseOnScroll"
+            :collapse-on-scroll="collapseOnScroll"
+            fixed
+            scroll-target="#app"
+          >
+            <v-app-bar-nav-icon @click="collapseOnScroll=!collapseOnScroll"></v-app-bar-nav-icon>
+            <div>
+
+              <div v-if="collapseOnScroll">
+                <ul class="v-breadcrumbs theme--light" style="">
+                  <li><a href="#" class="v-breadcrumbs__item">INICIO</a></li>
+                  <li class="v-breadcrumbs__divider">&gt;</li>
+                  <li>
+                    <div class="d-flex justify-center align-center">
+                      <v-menu offset-y >
+                        <template v-slot:activator="{ attrs, on }">
+                          <v-btn depressed
+                            v-bind="attrs"
+                            v-on="on"
+                            color="primary"
+                            outlined
+                          >
+                            Categoria
+                          </v-btn>
+                        </template>
+                  
+                        <v-list>
+                          <v-list-item
+                            v-for="item in categorias"
+                            :key="item"
+                            link
+                            @change="categoria=item"
+                          >
+                            <v-list-item-title v-text="item"></v-list-item-title>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                    </div>
+
+                  </a></li>
+                  <li class="v-breadcrumbs__divider">&gt;</li>
+                  <li><a href="#catalogoid" class="v-breadcrumbs__item">{{categoria.toUpperCase()}}</a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <v-spacer></v-spacer>
+
+            <v-card @click="dialogCart=true">
+              <v-badge 
+                :content="nCart"
+                :value="nCart"
+                color="green"
+                overlap 
+                
+                >
+                <v-icon>mdi-cart</v-icon>
+              </v-badge>
+            </v-card>
+
+          </v-app-bar>
+          <v-sheet >
+              <v-container>
+                <div class="text-center">
+                  <v-overlay :value="showMsg">
+                    <v-alert
+                    v-model="showMsg"
+                    :color="showMsgData.color"
+                    border="left"
+                    elevation="2"
+                    colored-border
+                    :icon="showMsgData.icon"
+                  >
+                    {{showMsgData.message}}
+                  </v-alert>
+
+                  </v-overlay>
+                </div>
+
+                <v-row class="ma-5"></v-row>
+
+                <v-card flat v-if="seleccionado" id='productoid'>
+                  <h2>Producto</h2>
+
+                      <h3>{{ catalogo.productos[seleccionado-1].nombre }}</h3>
+                    </v-row>
+                    <v-row >
+                      <v-col cols="12" md="7">
+                        <v-row>
+                          <v-rating :value="parseFloat(catalogo.productos[seleccionado-1].valoracion)" color="amber" readonly dense half-increments size="20"></v-rating>
+                        </v-row>
+                        <v-row>
+                          <v-col cols="2">
+                            <v-col v-for="(foto,index) in catalogo.productos[seleccionado-1].fotos" v-bind:key="index">
+                              <v-hover v-slot:default="{ hover }">
+                                <v-card :elevation="hover ? 12 : 2">
+                                  <v-img  @click="selecciona_foto(index)"
+                                  height="70px"
+                                  :src="foto"
+                                  >
+                                  </v-img>
+                                </v-card>
+                              </v-hover>
+                            </v-col>
+                          </v-col>
+                          <v-col cols="10">
+                            <v-card class="pa-1" flat>
+                              <v-img
+                              height="300px"
+                              :src="catalogo.productos[seleccionado-1].fotos[foto]"
+                              >          
+                              </v-img>
+                            </v-card>
+                          </v-col>
+                        </v-row>
+                      </v-col>
+                      <v-col cols="12" md="5" >
+                        <v-card height="100%">
+                          <v-card-text >
+                              <div>
+                                  <v-row class="ma-2" >
+                                    <strong>
+                                      <span style="font-size: 15px;vertical-align: top; color:darkgreen;">$</span>
+                                      <span style="font-size: 30px;vertical-align: top; color:darkgreen;">{{ catalogo.productos[seleccionado-1].precio }}</span>
+                                      <!-- <span style="font-size: 15px;vertical-align: top; color:darkgreen;">50</span> -->
+                                    </strong>
+                                  </v-row>
+                                  <v-row class="ma-2" style="color:red">{{ catalogo.productos[seleccionado-1].oferta }}</v-row>                
+                                  <v-row class="ma-2"> <v-icon>mdi-card</v-icon> Información de pago</v-row>
+                                  <v-row class="ma-2 mt-5">Cantidad (Unid.)</v-row>
+                                  <v-row >
+                                    <v-col cols="12" >
+                                      <v-text-field ref="form" v-model="cantidad"  @change="valida_cantidad()"  @click="valida_cantidad()" :rules="[cantidadPedidoCarritoRule]" :error-messages="[]" type="number" outlined ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="12" >
+                                      <v-btn block color="primary" @click="carrito_agregar()"  :disabled="carrito_agregar_des"  >
+                                        <v-icon
+                                        right
+                                        dark>mdi-cart
+                                      </v-icon>
+                                      > Agregar a carrito</v-btn>
+                                    </v-col>
+                                </v-row>
+
+                              </div>
+                          </v-card-text>
+                          <div d-flex align-end class="ma-2">* Iniciar sesión para añadir al carrito</div>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+                    <v-row>
+                      <v-card style="width: 100%;">
+                        <v-tabs v-model="tab" background-color="transparent" grow >
+                          <v-tab>
+                            Información del Producto
+                          </v-tab>
+                          <v-tab>
+                            Opinión de los consumidores
+                          </v-tab>
+                      </v-tabs>
+                    
+                        <v-tabs-items v-model="tab">
+                          <v-tab-item >
+                            <v-card flat >
+                              <v-card-text>{{ catalogo.productos[seleccionado-1].descripcion }}</v-card-text>
+                            </v-card>
+                          </v-tab-item>
+                          <v-tab-item >
+                            <v-card flat >
+                              <v-card-text>
+                                <v-timeline align-top dense>
+                                  <v-timeline-item v-for="(comentario,index) in catalogo.productos[seleccionado-1].comentarios" v-bind:key="index" >{{ comentario }}</v-timeline-item>
+                                </v-timeline>
+                              </v-card-text>
+                            </v-card>                      
+                          </v-tab-item>
+
+                        </v-tabs-items>
+                      </v-card>            
+                    </v-row>
+
+                </v-card>
+
+                <hr class="ma-5" v-if="seleccionado">
+
+                <v-card flat id="catalogoid">
+                    <h2>Catálogo ({{categoria}})</h2>
+                    <v-row >
+                      <v-col v-for="(producto,index) in catalogo_filtrado()" :key="producto.id" cols="6" sm="4" md="3" lg="2" @click="selecciona(index)">
+                        <v-hover v-slot:default="{ hover }">
+                            <a href="#productoid" style="text-decoration: none; ">
+                              <v-card class="pa-1" :elevation="hover ? 12 : 2">
+                                <v-img class="ma-2"
+                                height="100px"
+                                :src="producto.fotos[0]"
+                                >
+                                </v-img>
+                                <v-card-text>
+                                  <v-row>
+                                    <v-col cols="12">
+                                      <span style="font-size: 15px;vertical-align: top; color:darkgreen;">$</span>
+                                      <span style="font-size: 25px;vertical-align: top; color:darkgreen;">{{producto.precio}}</span>
+                                      <!-- <span style="font-size: 15px;vertical-align: top; color:darkgreen;">50</span> -->
+                                      <span class="ma5" style="font-size: 12px;vertical-align: top; color:gray;text-decoration: line-through;">$120,50</span>
+                                    </v-col>
+                                    <v-col cols="12">
+                                      <span style="font-size: 15px;vertical-align: top; color:red;">{{producto.oferta}}</span>
+                                    </v-col>
+                                    <v-col cols="12">
+                                      <span style="font-size: 10px;vertical-align: top; color:darkslategrey;">{{ producto.descripcion }} </span>
+                                    </v-col>
+                                  </v-row>                  
+                                  <v-rating :value="parseFloat(producto.valoracion)" readonly dense half-increments size="14"></v-rating>
+                                </v-card-text>
+    
+                            </a>
+                          </v-card>
+                        </v-hover>
+                      </v-col>
+                    </v-row>
+                </v-card>
+
+                <v-dialog
+                v-model="dialogCart"
+                hide-overlay
+                transition="dialog-bottom-transition"
+                >
+                <v-card >
+                  <v-toolbar flat dark color="primary">
+                    <v-btn icon dark @click="dialogCart = false">
+                      <v-icon>mdi-close</v-icon>
+                    </v-btn>
+                    
+                    <v-icon dark>mdi-cart </v-icon>
+                    <v-spacer></v-spacer>
+                    <v-toolbar-items>
+                      <v-btn text class="pa-2" @click="carrito_vaciar()">
+                        Vaciar Carrito
+                      </v-btn>
+                      <v-btn text @click="dialogCart = false">
+                        Seguir comprando
+                      </v-btn>
+                    </v-toolbar-items>
+                    <v-menu bottom right offset-y>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn dark icon v-bind="attrs" v-on="on">
+                          <v-icon>mdi-dots-vertical</v-icon>
+                        </v-btn>
+                      </template>
+                    </v-menu>
+                  </v-toolbar>
+
+                  <v-row no-gutters v-if="nCart===0" justify="center" class="pa-5">
+                    <h2>No hay elementos en el carrito.</h2>
+                  </v-row>
+                  
+                  <v-row no-gutters v-if="nCart">
+                    <v-col cols="12"
+                      md="9"
+                    >
+                      <v-card-text  >
+                        <v-data-table
+                          dense
+                          :headers="hCart"
+                          :items-per-page="itemsperpage"
+                          mobile-breakpoint="800"
+                          :items="cart"
+                          class="elevation-1"
+                        >
+                        <template v-slot:item.foto="{ item }">
+                          <v-avatar size="50px">
+                            <v-img :src="item.producto.fotos[0] "></v-img>
+                          </v-avatar>                        
+                        </template>
+                        <template v-slot:item.nombre="{ item }">
+                          {{ item.producto.nombre }}
+                        </template>
+                        <template v-slot:item.unitario="{ item }">
+                          ${{ item.producto.precio }}
+                        </template>
+                        <template v-slot:item.precio="{ item }">
+                          <strong>
+                            <span style="font-size: 10px;vertical-align: top; color:darkgreen;">$</span>
+                            <span style="font-size: 20px;vertical-align: top; color:darkgreen;">{{ item.producto.precio * item.cantidad}}</span>
+                          </strong>
+                        </template>
+                        <template v-slot:item.cantidad="{ item }">
+                          <v-row justify="end" >
+                            <v-col cols="6" sd="8" md="6">
+                              <v-text-field
+                                dense
+                                outlined
+                                v-model="item.cantidad"
+                                type="number"
+                              ></v-text-field>
+                            </v-col>
+                            <v-col cols="3">
+                              <strong>
+                                <v-btn color="#888888" outlined rounded small @click="carrito_borra_item(item)" >
+                                  <v-icon color="#888888" >mdi-delete</v-icon>
+                                </v-btn>
+                              </strong>
+    
+                            </v-col>
+                          </v-row>
+                        </template>
+                      </v-data-table>                      
+                      </v-card-text>
+                    </v-col>
+                    <v-col cols="12"
+                      md="3"
+                    >
+                      <v-card>
+                        <v-card-title >
+                          <div style="margin: auto;">
+                            Cantidad: 
+                            <span style="font-size: 20px;vertical-align: top; color:darkgreen;">{{nCart}}</span>
+                          </div>
+                          <div style="margin: auto;">
+                            Total: 
+                            <span style="font-size: 15px;vertical-align: top; color:darkgreen;">$</span>
+                            <span style="font-size: 25px;vertical-align: top; color:darkgreen;">{{ this.carrito_total}}</span>
+                          </div>
+                        </v-card-title>
+                        <v-card-actions style="margin: auto;">
+                          <v-btn block color="primary" dark>Comprar</v-btn>
+                        </v-card-actions>
+                      </v-card>
+                    </v-col>
+                  </v-row>
+                </v-card>
+              </v-dialog>
+              </v-container>            
+          </v-sheet>
+        </v-card>
+      </v-main>
+    </v-app>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      data: () => ( {
+        seleccionado: 0,
+        foto: 0,
+        categoria: 'TODAS',
+      
+        // showMsg
+        showMsg: false,
+        showMsgData : {
+          message : 'Prueba',
+          icon: 'mdi-alert',
+          color: 'green'
+        },
+        // Cart
+        carrito_agregar_des: false,
+        itemsperpage: 5,
+        hCart: [
+          {
+            text: 'Foto',
+            align: 'center',
+            sortable: false,
+            value: 'foto',
+          },
+          { text: 'Articulo', value: 'nombre' ,align: 'center' ,sortable: false },
+          { text: 'Precio Unitario', value: 'unitario', align: 'center' ,sortable: false},
+          { text: 'Cantidad', value: 'cantidad' ,align: 'center' ,sortable: false},
+          { text: 'Precio', value: 'precio' ,align: 'center' ,sortable: false},
+        ],
+        cart: [],
+        collapseOnScroll:true,
+        dialogCart: false,        
+        tab: null,
+
+        cantidad: 1,
+        catalogo:{
+          productos : [
+          { id: '123456',
+            nombre : 'Maceta cemento cilindrica',
+            descripcion: 'Es una maceta de cemento cilindrica con una o varias suculentas',
+            categoria: 'macet',
+            precio: '250.00',
+            descuento: '10%',
+            oferta: "3x2",
+            cantidad: '10',
+            fotos: ['https://d26lpennugtm8s.cloudfront.net/stores/535/035/products/whatsapp-image-2018-10-08-at-13-01-02-11-d2b70461d42b0027e515391075644666-240-0.jpeg','https://http2.mlstatic.com/D_NQ_NP_752126-MLA43106540153_082020-O.webp'],
+            formasdepago: ['contado'],
+            formasdeentrega: ['retiro','correo'],
+            valoracion: '3.8',
+            comentarios:['Muy bonitas','Son excelentes para regalo','Quiero mas :wink:']
+            },
+            { id: '123458',
+            nombre : 'Maceta cemento cuadrada',
+            descripcion: 'Es una maceta de cemento cudrada con una o varias suculentas',
+            categoria: 'maceta',
+            precio: '250.00',
+            descuento: '10%',
+            oferta: "Oferta 3x2",
+            cantidad: '10',
+            fotos: ['https://http2.mlstatic.com/D_NQ_NP_2X_752126-MLA43106540153_082020-F.webp',
+                    'https://d26lpennugtm8s.cloudfront.net/stores/535/035/products/e8ef043b-75e7-4d9b-9d5f-2af3b6c460bd1-e9250116e141b53ff515676869753202-240-0.jpg',
+                    'https://http2.mlstatic.com/D_NQ_NP_752126-MLA43106540153_082020-O.webp',
+                    'https://d26lpennugtm8s.cloudfront.net/stores/535/035/products/6ec0de8f-2669-4296-ae4b-326f6c97b3ec1-9a50fa3202e10edcbf15676873498449-240-0.jpg'],                    
+            formasdepago: ['contado'],
+            formasdeentrega: ['retiro','correo'],
+            valoracion: '5',
+            comentarios:['Muy bonitas','Son excelentes para regalo','Quiero mas :wink:']
+            },
+            { id: '123459',
+            nombre : 'Maceta cemento cilindrica',
+            descripcion: 'Es una maceta de cemento cilindrica con una o varias suculentas',
+            categoria: 'maceta',
+            precio: '150.00',
+            descuento: '50%',
+            oferta: "Mitad de precio",
+            cantidad: '12',
+            fotos: ['https://d26lpennugtm8s.cloudfront.net/stores/535/035/products/whatsapp-image-2018-10-05-at-14-59-24-11-a9e089369df247a9a515562026698014-240-0.jpeg','https://http2.mlstatic.com/D_NQ_NP_752126-MLA43106540153_082020-O.webp'],
+            formasdepago: ['contado'],
+            formasdeentrega: ['retiro','correo'],
+            valoracion: '3',
+            comentarios:['Muy bonitas','Son excelentes para regalo','Quiero mas :wink:']
+            },
+            { id: '23458',
+            nombre : 'Maceta cemento cuadrada',
+            descripcion: 'Es una maceta de cemento cudrada con una o varias suculentas',
+            categoria: 'maceta',
+            precio: '250.00',
+            descuento: '10%',
+            oferta: "Oferta 3x2",
+            cantidad: '10',
+            fotos: ['https://http2.mlstatic.com/D_NQ_NP_2X_752126-MLA43106540153_082020-F.webp',
+                    'https://d26lpennugtm8s.cloudfront.net/stores/535/035/products/e8ef043b-75e7-4d9b-9d5f-2af3b6c460bd1-e9250116e141b53ff515676869753202-240-0.jpg',
+                    'https://http2.mlstatic.com/D_NQ_NP_752126-MLA43106540153_082020-O.webp',
+                    'https://d26lpennugtm8s.cloudfront.net/stores/535/035/products/6ec0de8f-2669-4296-ae4b-326f6c97b3ec1-9a50fa3202e10edcbf15676873498449-240-0.jpg'],                    
+            formasdepago: ['contado'],
+            formasdeentrega: ['retiro','correo'],
+            valoracion: '5',
+            comentarios:['Muy bonitas','Son excelentes para regalo','Quiero mas :wink:']
+            },
+            { id: '23459',
+            nombre : 'Plantita de prueba',
+            descripcion: 'Plantasuculentas',
+            categoria: 'Plantitas',
+            precio: '150.00',
+            descuento: '50%',
+            oferta: "Mitad de precio",
+            cantidad: '0',
+            fotos: ['https://d26lpennugtm8s.cloudfront.net/stores/535/035/products/whatsapp-image-2018-10-05-at-14-59-24-11-a9e089369df247a9a515562026698014-240-0.jpeg','https://http2.mlstatic.com/D_NQ_NP_752126-MLA43106540153_082020-O.webp'],
+            formasdepago: ['contado'],
+            formasdeentrega: ['retiro','correo'],
+            valoracion: '3',
+            comentarios:['Muy bonitas','Son excelentes para regalo','Quiero mas :wink:']
+            }
+          ] 
+        },
+        cantidadPedidoCarritoRule: function(v){
+          if (!v) return 'debe ingresarse la cantidad de articulos con números';
+          //if (!v.trim()) return true;
+          if (!isNaN(parseFloat(v)) && v >= 1 && v <= 99) return true;
+          // if (parseInt(v) > parseInt(this.catalogo.productos[this.seleccionado-1].cantidad)) {
+          //   this.cantidad = parseInt(this.catalogo.productos[this.seleccionado-1].cantidad);
+          //   return 'Se llego al máximo de stock, solo se pueden pedir ' + this.catalogo.productos[this.seleccionado-1].cantidad+ ', disculpe las molestias'
+            
+          // }
+
+
+          return 'La cantidad de articulos debe estar entre 1 y 99';
+        },  
+      }),
+      methods:{
+        catalogo_filtrado : function(){
+          if (this.categoria.toUpperCase()==='TODAS'){
+            return this.catalogo.productos.filter((producto)=>parseInt(producto.cantidad)>0);
+          }
+          return this.catalogo.productos.filter((producto)=>producto.categoria.toUpperCase()===this.categoria.toUpperCase() && 
+                                                    parseInt(producto.cantidad)>0)
+        },
+        showMessage : function(message,icon='mdi-error'){
+          if (icon==='mdi-error'){
+            this.showMsgData.color = 'red'
+          } else if (icon==='mdi-info'){
+            this.showMsgData.color = 'blue'
+          }
+          this.showMsgData.message = message;
+          this.showMsg = true;
+        },
+        selecciona: function(indice){
+          this.foto = 0;
+          this.tab = 0;
+          this.cantidad = 1;
+          this.seleccionado = indice + 1;
+          if (this.$refs.form){
+            this.$refs.form.resetValidation()
+          }
+          this.carrito_agregar_des=false;
+        },
+        selecciona_foto: function(indice){
+          this.foto = indice;
+        },
+        error_valida_cantidad: function( prod_id, cantidad ){
+
+        },
+        valida_cantidad: function(){
+          if (this.cantidad <= 0){
+            this.cantidad = 1;
+            this.carrito_agregar_des = false;
+          }
+          if (this.cantidad > parseInt(this.catalogo.productos[this.seleccionado-1].cantidad)) {
+            this.$refs.form.errorBucket.push('Se llego al máximo de stock, solo se pueden pedir ' + this.catalogo.productos[this.seleccionado-1].cantidad+ ', disculpe las molestias');
+            this.carrito_agregar_des = true;
+            //this.cantidad = parseInt(this.catalogo.productos[this.seleccionado-1].cantidad);
+          } else {
+            this.carrito_agregar_des = false;
+          }
+        },
+        // CARRITO
+        carrito_agregar: function(){
+          var prod_id = this.catalogo.productos[this.seleccionado-1].id;
+          var indice = this.cart.reduce((prev,curr,ind)=>{
+            if (prev===-1){
+              if (curr.producto_id===prod_id){
+                return ind;
+              }
+              return prev;
+            } else return prev
+          },-1);
+          if (indice!==-1){
+            this.cart[indice].cantidad =parseInt(this.cart[indice].cantidad )+ parseInt(this.cantidad);
+          } else {
+            this.cart.push({
+              producto_id: prod_id,
+              cantidad: parseInt(this.cantidad),
+              producto: this.catalogo.productos[this.seleccionado-1]
+            })
+          }
+          
+          this.cantidad = 1;
+        },
+        carrito_borra_item: function(item){
+          this.cart = this.cart.filter((it)=> it.producto_id!==item.producto_id)
+        },
+        carrito_vaciar: function(){
+          this.cart = [];
+          this.dialogCart = false;
+        }
+        // ,
+        // valida_cantidad_carrito: function(item){
+        //   if (item.cantidad <= 0){
+        //     item.cantidad = 1;
+        //   }
+        //   if (item.cantidad > parseInt(this.catalogo.productos[this.seleccionado-1].cantidad)) {
+        //     this.showMessage('Se llego al máximo de stock, solo se pueden pedir ' + this.catalogo.productos[this.seleccionado-1].cantidad+ ', disculpe las molestias','mdi-info')
+        //     this.cantidad = parseInt(this.catalogo.productos[this.seleccionado-1].cantidad);
+        //   }
+        // },
+
+      },
+      computed: {
+        nCart: function(){
+          var total = 0;
+          for (let index = 0; index < this.cart.length; index++) {
+            const item = this.cart[index];
+            if (parseInt(item.cantidad)<=0){
+              item.cantidad = 1
+            }
+            total += parseInt(item.cantidad)
+          }
+          
+          // for (const item of this.cart) {
+          //   if (parseInt(item.cantidad)<=0){
+          //     item.cantidad = 1
+          //   }
+          //   total += parseInt(item.cantidad)
+          // }
+          return total;
+        },
+        carrito_total: function(){
+          let total = 0.0;
+          for (const item of this.cart) {
+            total += parseFloat(item.cantidad) * item.producto.precio; 
+          }
+          return total;
+        },
+        categorias: function(){
+          var categorias = ['TODAS'];
+          this.catalogo.productos.reduce((prev,prod,indice)=>{
+            if ( parseInt(prod.cantidad)>0){
+              if (prev && !prev.includes(prod.categoria)){
+                prev.push(prod.categoria);
+              }
+            }
+            return prev;
+          },categorias);
+          return categorias;
+        }
+      
+      },
+      watch: {
+      showMsg (val) {
+        val && setTimeout(() => {
+          this.showMsg = false
+        }, 5000)
+      },
+
+    },     
+    async created(){
+        const dataURL = 'https://script.google.com/macros/s/AKfycbyvqBXSgXinEQr5ZgSNtxNZMvGJ-3cFvMDYSnrueopK/dev?accion=DATOS'
+        var self = this // create a closure to access component in the callback below
+        const headers = { 'Access-Control-Allow-Origin':'*'};
+        const response = await fetch(dataURL, { headers });
+        const data = await response.json();
+        console.log(data)
+        self.catalogo = data;
+        
+      }       
+  })
+  </script>
+</body>
+</html>
+
